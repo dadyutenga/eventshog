@@ -31,6 +31,18 @@ class EnvironmentVariables {
 
   @IsString()
   DB_NAME: string;
+
+  @IsString()
+  CLICKHOUSE_URL: string;
+
+  @IsString()
+  CLICKHOUSE_USERNAME: string;
+
+  @IsString()
+  CLICKHOUSE_PASSWORD: string;
+
+  @IsString()
+  CLICKHOUSE_DATABASE: string;
 }
 
 export function validate(config: Record<string, unknown>) {

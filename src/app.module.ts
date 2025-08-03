@@ -7,7 +7,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import databaseConfig from './core/database/database.config';
+import clickhouseConfig from './core/clickhouse/clickhouse.config';
 import { AuthModule } from './modules/auth/auth.module';
+import { ClickHouseModule } from './core/clickhouse/clickhouse.module';
 import { validate } from './config/env.validation';
 
 
@@ -16,7 +18,7 @@ import { validate } from './config/env.validation';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      load: [databaseConfig],
+      load: [databaseConfig, clickhouseConfig],
       validate,
     }),
     TypeOrmModule.forRootAsync({
@@ -42,6 +44,7 @@ import { validate } from './config/env.validation';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     AuthModule,
+    ClickHouseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
