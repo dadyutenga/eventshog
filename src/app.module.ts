@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import databaseConfig from './core/database/database.config';
+import { AuthModule } from './modules/auth/auth.module';
+import { validate } from './config/env.validation';
 
 
 @Module({
@@ -15,6 +17,7 @@ import databaseConfig from './core/database/database.config';
       isGlobal: true,
       envFilePath: '.env',
       load: [databaseConfig],
+      validate,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -38,7 +41,7 @@ import databaseConfig from './core/database/database.config';
     }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
-   
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
