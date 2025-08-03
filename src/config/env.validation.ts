@@ -43,6 +43,12 @@ class EnvironmentVariables {
 
   @IsString()
   CLICKHOUSE_DATABASE: string;
+
+  @IsString()
+  KAFKA_CLIENT_ID: string;
+
+  @IsString()
+  KAFKA_BROKERS: string;
 }
 
 export function validate(config: Record<string, unknown>) {

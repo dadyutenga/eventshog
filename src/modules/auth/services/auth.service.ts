@@ -143,6 +143,10 @@ export class AuthService {
     return app;
   }
 
+  async incrementEventCount(appId: string): Promise<void> {
+    await this.appRepository.incrementEventCount(appId);
+  }
+
   private generateTokens(user: User): AuthResponse {
     const payload: JwtPayload = {
       sub: user.id,
