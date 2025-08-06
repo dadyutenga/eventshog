@@ -1,10 +1,10 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import * as fs from 'fs';
 import * as path from 'path';
+import * as fs from 'fs';
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
-  const baseConfig: TypeOrmModuleOptions = {
+  const baseConfig: any = {
     type:   process.env.DB_TYPE as any,
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT as string),
@@ -20,6 +20,29 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
     },
   };
 
+  // Add SSL configuration if certificates are provided
+  if (process.env.DB_SSL_ENABLED === 'true') {
+    const sslConfig: any = {
+      rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+    };
+
+    // Add CA certificate if provided
+    if (process.env.DB_SSL_CA_PATH && fs.existsSync(process.env.DB_SSL_CA_PATH)) {
+      sslConfig.ca = fs.readFileSync(process.env.DB_SSL_CA_PATH);
+    }
+
+    // Add client certificate if provided
+    if (process.env.DB_SSL_CERT_PATH && fs.existsSync(process.env.DB_SSL_CERT_PATH)) {
+      sslConfig.cert = fs.readFileSync(process.env.DB_SSL_CERT_PATH);
+    }
+
+    // Add client key if provided
+    if (process.env.DB_SSL_KEY_PATH && fs.existsSync(process.env.DB_SSL_KEY_PATH)) {
+      sslConfig.key = fs.readFileSync(process.env.DB_SSL_KEY_PATH);
+    }
+
+    baseConfig.ssl = sslConfig;
+  }
 
   return baseConfig;
 }); 

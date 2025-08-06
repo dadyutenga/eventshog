@@ -1,0 +1,25 @@
+node_modules
+npm-debug.log
+dist
+.git
+.gitignore
+README.md
+.env
+.env.*
+*.log
+coverage
+.nyc_output
+.DS_Store
+.vscode
+.idea
+
+# Exclude certificates from build context (they'll be mounted at runtime)
+all-apps-analytics-ca-certificate.crt
+certs/
+certificates/
+ssl/
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx 

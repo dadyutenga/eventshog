@@ -39,6 +39,24 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
 
+  app:
+    build: .
+    container_name: eventshog-app
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      NODE_ENV: production
+      DB_SSL_ENABLED: true
+      DB_SSL_CA_PATH: /app/certs/all-apps-analytics-ca-certificate.crt
+      DB_SSL_REJECT_UNAUTHORIZED: true
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    volumes:
+      # Mount certificate from host (for production)
+      - ./certs:/app/certs:ro
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
