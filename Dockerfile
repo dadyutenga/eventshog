@@ -25,7 +25,12 @@ COPY --from=builder /usr/src/app/dist ./dist
 # Download the certificate from environment variable
 ARG CERT_URL
 RUN if [ -n "$CERT_URL" ]; then \
+        echo "Downloading certificate from: $CERT_URL"; \
         wget -O /usr/src/app/all-apps-analytics-ca-certificate.crt "$CERT_URL"; \
+        echo "Certificate downloaded. File size:"; \
+        ls -la /usr/src/app/all-apps-analytics-ca-certificate.crt; \
+        echo "Certificate content (first 5 lines):"; \
+        head -5 /usr/src/app/all-apps-analytics-ca-certificate.crt; \
     else \
         echo "Warning: CERT_URL not provided, certificate not downloaded"; \
     fi

@@ -48,14 +48,14 @@ services:
       KAFKA_BROKERS: kafka:29092
       NODE_ENV: production
       DB_SSL_ENABLED: true
-      DB_SSL_CA_PATH: /app/certs/all-apps-analytics-ca-certificate.crt
+      DB_SSL_CA_PATH: all-apps-analytics-ca-certificate.crt
       DB_SSL_REJECT_UNAUTHORIZED: true
     ports:
       - '3000:3000'
     restart: unless-stopped
     volumes:
       # Mount certificate from host (for production)
-      - ./certs:/app/certs:ro
+      - ./certs:/usr/src/app/certs:ro
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest

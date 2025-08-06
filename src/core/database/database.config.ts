@@ -22,13 +22,27 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
 
   // Add SSL configuration if certificates are provided
   if (process.env.DB_SSL_ENABLED === 'true') {
+    console.log('SSL is enabled, configuring SSL...');
+    console.log('DB_SSL_CA_PATH:', process.env.DB_SSL_CA_PATH);
+    console.log('Current working directory:', process.cwd());
+    
     const sslConfig: any = {
       rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
     };
 
     // Add CA certificate if provided
-    if (process.env.DB_SSL_CA_PATH && fs.existsSync(process.env.DB_SSL_CA_PATH)) {
-      sslConfig.ca = fs.readFileSync(process.env.DB_SSL_CA_PATH);
+    if (process.env.DB_SSL_CA_PATH) {
+      const caPath = process.env.DB_SSL_CA_PATH;
+      console.log('Checking CA certificate path:', caPath);
+      console.log('File exists:', fs.existsSync(caPath));
+      
+      if (fs.existsSync(caPath)) {
+        const certContent = fs.readFileSync(caPath);
+        console.log('CA certificate loaded, size:', certContent.length, 'bytes');
+        sslConfig.ca = certContent;
+      } else {
+        console.error('CA certificate file not found at:', caPath);
+      }
     }
 
     // Add client certificate if provided
@@ -41,6 +55,7 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
       sslConfig.key = fs.readFileSync(process.env.DB_SSL_KEY_PATH);
     }
 
+    console.log('SSL config:', JSON.stringify(sslConfig, null, 2));
     baseConfig.ssl = sslConfig;
   }
 
