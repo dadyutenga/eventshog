@@ -5,7 +5,8 @@ import {
   UseGuards, 
   Request, 
   HttpCode, 
-  HttpStatus 
+  HttpStatus, 
+  Get
 } from '@nestjs/common';
 import { 
   ApiTags, 
@@ -25,6 +26,14 @@ import { v4 as uuidv4 } from 'uuid';
 @Controller('events')
 export class EventsController {
   constructor(private eventEmitterService: EventEmitterService) {}
+
+@Get('health')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Check if the events service is running' })
+  @ApiResponse({ status: 200, description: 'Events service is running' })
+  healthCheck(): string {
+    return 'Events service is running';
+  }
 
   @Post('track')
   @UseGuards(ProjectKeyGuard)
