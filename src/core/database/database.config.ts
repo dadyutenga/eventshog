@@ -38,7 +38,7 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
       
       if (fs.existsSync(caPath)) {
         const certContent = fs.readFileSync(caPath);
-        console.log('CA certificate loaded, size:', certContent.length, 'bytes');
+        console.log('CA certificate loaded');
         sslConfig.ca = certContent;
       } else {
         console.error('CA certificate file not found at:', caPath);
@@ -55,7 +55,6 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
       sslConfig.key = fs.readFileSync(process.env.DB_SSL_KEY_PATH);
     }
 
-    console.log('SSL config:', JSON.stringify(sslConfig, null, 2));
     baseConfig.ssl = sslConfig;
   }
 
