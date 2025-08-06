@@ -48,15 +48,17 @@ export class AppRepository {
   }
 
   async incrementEventCount(appId: string): Promise<void> {
-    await this.repository
-      .createQueryBuilder()
-      .update(App)
-      .set({
-        eventCount: () => 'event_count + 1',
-        lastEventAt: new Date(),
-      })
-      .where('id = :id', { id: appId })
-      .execute();
+    // First get the current app to get the current event count
+    const app = await this.repository.findOne({ where: { id: appId } });
+    if (!app) {
+      throw new Error(`App with id ${appId} not found`);
+    }
+
+    // Update with the incremented count
+    await this.repository.update(appId, {
+      eventCount: app.eventCount + 1,
+      lastEventAt: new Date(),
+    });
   }
 
   private generateApiKey(): string {

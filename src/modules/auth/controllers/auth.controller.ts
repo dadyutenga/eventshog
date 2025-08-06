@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
   HttpCode,
@@ -20,12 +21,15 @@ import {
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService, AuthResponse } from '../services/auth.service';
+import { PasswordResetService } from '../services/password-reset.service';
 import {
   LoginDto,
   RegisterDto,
   CreateAppDto,
   RefreshTokenDto,
   ChangePasswordDto,
+  RequestPasswordResetDto,
+  ResetPasswordDto,
   AuthResponseDto,
 } from '../dto/auth.dto';
 import { App } from '../entities/app.entity';
@@ -33,7 +37,10 @@ import { App } from '../entities/app.entity';
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private passwordResetService: PasswordResetService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -71,6 +78,46 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
     return this.authService.refreshToken(refreshTokenDto.refreshToken);
+  }
+
+  @Post('request-password-reset')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset OTP' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset OTP sent if email exists',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  async requestPasswordReset(
+    @Body() requestPasswordResetDto: RequestPasswordResetDto,
+  ): Promise<{ message: string }> {
+    return this.passwordResetService.requestPasswordReset(requestPasswordResetDto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password with OTP' })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
+    return this.passwordResetService.resetPassword(resetPasswordDto);
   }
 
   @UseGuards(AuthGuard('jwt'))

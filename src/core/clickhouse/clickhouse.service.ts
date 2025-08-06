@@ -85,6 +85,95 @@ export class ClickHouseService implements OnModuleDestroy {
     }
   }
 
+  async tableExists(databaseName: string, tableName: string): Promise<boolean> {
+    try {
+      // Validate database and table names to prevent SQL injection
+      if (!/^[a-zA-Z0-9_]+$/.test(databaseName)) {
+        throw new Error('Invalid database name. Only alphanumeric characters and underscores are allowed.');
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+        throw new Error('Invalid table name. Only alphanumeric characters and underscores are allowed.');
+      }
+
+      const result = await this.client.query({
+        query: `
+          SELECT count() as count 
+          FROM system.tables 
+          WHERE database = '${databaseName}' AND name = '${tableName}'
+        `,
+        format: 'JSONEachRow',
+      });
+      
+      const data = await result.json();
+      const exists = data.length > 0 && (data[0] as any).count > 0;
+      
+      this.logger.debug(`Table ${databaseName}.${tableName} exists: ${exists}`);
+      return exists;
+    } catch (error) {
+      this.logger.error(`Failed to check if table ${databaseName}.${tableName} exists:`, error);
+      return false;
+    }
+  }
+
+  async databaseExists(databaseName: string): Promise<boolean> {
+    try {
+      // Validate database name to prevent SQL injection
+      if (!/^[a-zA-Z0-9_]+$/.test(databaseName)) {
+        throw new Error('Invalid database name. Only alphanumeric characters and underscores are allowed.');
+      }
+
+      const result = await this.client.query({
+        query: `
+          SELECT count() as count 
+          FROM system.databases 
+          WHERE name = '${databaseName}'
+        `,
+        format: 'JSONEachRow',
+      });
+      
+      const data = await result.json();
+      const exists = data.length > 0 && (data[0] as any).count > 0;
+      
+      this.logger.debug(`Database ${databaseName} exists: ${exists}`);
+      return exists;
+    } catch (error) {
+      this.logger.error(`Failed to check if database ${databaseName} exists:`, error);
+      return false;
+    }
+  }
+
+  async getTableInfo(databaseName: string, tableName: string): Promise<any> {
+    try {
+      // Validate database and table names to prevent SQL injection
+      if (!/^[a-zA-Z0-9_]+$/.test(databaseName)) {
+        throw new Error('Invalid database name. Only alphanumeric characters and underscores are allowed.');
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+        throw new Error('Invalid table name. Only alphanumeric characters and underscores are allowed.');
+      }
+
+      const result = await this.client.query({
+        query: `
+          SELECT 
+            name,
+            engine,
+            total_rows,
+            total_bytes,
+            metadata_modification_time
+          FROM system.tables 
+          WHERE database = '${databaseName}' AND name = '${tableName}'
+        `,
+        format: 'JSONEachRow',
+      });
+      
+      const data = await result.json();
+      return data.length > 0 ? data[0] : null;
+    } catch (error) {
+      this.logger.error(`Failed to get table info for ${databaseName}.${tableName}:`, error);
+      return null;
+    }
+  }
+
   async createEventsTable(databaseName: string, tableName: string = 'events'): Promise<void> {
     // Validate database and table names to prevent SQL injection
     if (!/^[a-zA-Z0-9_]+$/.test(databaseName)) {
@@ -99,7 +188,8 @@ export class ClickHouseService implements OnModuleDestroy {
         id UUID DEFAULT generateUUIDv4(),
         app_id String,
         event_name String,
-        user_id String,
+        user_id Nullable(String),
+        device_id Nullable(String),
         session_id String,
         timestamp DateTime64(3),
         properties JSON,

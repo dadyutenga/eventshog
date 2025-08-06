@@ -15,6 +15,7 @@ export enum AppPlatform {
   IOS = 'ios',
   WEB = 'web',
   DESKTOP = 'desktop',
+  FLUTTER = 'flutter',
 }
 
 export enum AppStatus {

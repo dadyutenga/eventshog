@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { KafkaService, EventMessage } from '../../../core/kafka/kafka.service';
 import { ClickHouseService } from '../../../core/clickhouse/clickhouse.service';
 import { AuthService } from '../../auth/services/auth.service';
+import { EventType } from '../../events/dto/event.dto';
 
 @Injectable()
 export class EventProcessorService {
@@ -34,7 +35,7 @@ export class EventProcessorService {
       this.logger.debug(`Processing event: ${event.id} for app: ${event.appId}`);
 
       // Validate the app exists and is active
-      const app = await this.authService.validateApiKey(event.appId);
+      const app = await this.authService.validateProjectKey(event.appId);
       if (!app) {
         this.logger.warn(`Invalid app ID for event ${event.id}: ${event.appId}`);
         return;
@@ -46,17 +47,25 @@ export class EventProcessorService {
       // Ensure the tenant database and table exist
       await this.ensureTenantDatabase(tenantDatabase);
 
+      // Handle special events
+      if (event.eventName === EventType.DEVICE_LINK) {
+        await this.handleDeviceLinkEvent(event, tenantDatabase);
+      }
+
       // Prepare event data for ClickHouse
       const eventData = {
         app_id: event.appId,
         event_name: event.eventName,
-        user_id: event.userId,
+        user_id: event.userId || null,
+        device_id: event.deviceId || null,
         session_id: event.sessionId || '',
         timestamp: event.timestamp,
-        properties: JSON.stringify(event.properties),
+        properties: event.properties, // Don't stringify - ClickHouse expects JSON object
         platform: event.platform,
         version: event.version || '',
       };
+
+      this.logger.debug(`Event data prepared for ClickHouse: ${JSON.stringify(eventData, null, 2)}`);
 
       // Insert event into ClickHouse
       await this.clickHouseService.insert(`${tenantDatabase}.events`, [eventData]);
@@ -73,10 +82,54 @@ export class EventProcessorService {
 
   private async ensureTenantDatabase(databaseName: string): Promise<void> {
     try {
-      await this.clickHouseService.createDatabase(databaseName);
-      await this.clickHouseService.createEventsTable(databaseName);
+      // Check if database exists
+      const dbExists = await this.clickHouseService.databaseExists(databaseName);
+      if (!dbExists) {
+        this.logger.log(`Creating database ${databaseName}`);
+        await this.clickHouseService.createDatabase(databaseName);
+      }
+
+      // Check if events table exists
+      const tableExists = await this.clickHouseService.tableExists(databaseName, 'events');
+      if (!tableExists) {
+        this.logger.log(`Creating events table in ${databaseName}`);
+        await this.clickHouseService.createEventsTable(databaseName);
+      }
+
+      this.logger.debug(`Tenant database ${databaseName} is ready`);
     } catch (error) {
-      this.logger.warn(`Database/table might already exist for ${databaseName}:`, error.message);
+      this.logger.error(`Failed to ensure tenant database ${databaseName}:`, error);
+      throw error;
+    }
+  }
+
+  private async handleDeviceLinkEvent(event: EventMessage, tenantDatabase: string): Promise<void> {
+    try {
+      if (!event.userId || !event.deviceId) {
+        this.logger.warn('Device link event missing userId or deviceId');
+        return;
+      }
+
+      // Check if the events table exists before running ALTER TABLE
+      const tableExists = await this.clickHouseService.tableExists(tenantDatabase, 'events');
+      if (!tableExists) {
+        this.logger.warn(`Events table does not exist in ${tenantDatabase}, skipping device link update`);
+        return;
+      }
+
+      // Update all previous events where device_id matches and user_id is null
+      const updateQuery = `
+        ALTER TABLE ${tenantDatabase}.events 
+        UPDATE user_id = '${event.userId}' 
+        WHERE device_id = '${event.deviceId}' AND user_id IS NULL
+      `;
+
+      await this.clickHouseService.executeQuery(updateQuery);
+      
+      this.logger.log(`Linked device ${event.deviceId} to user ${event.userId} in database ${tenantDatabase}`);
+    } catch (error) {
+      this.logger.error(`Failed to handle device link event:`, error);
+      throw error;
     }
   }
 

@@ -143,6 +143,15 @@ export class AuthService {
     return app;
   }
 
+  async validateProjectKey(projectKey: string): Promise<App | null> {
+    console.log('projectKey', projectKey);
+    const app = await this.appRepository.findByAppId(projectKey);
+    if (!app || app.status !== AppStatus.ACTIVE) {
+      return null;
+    }
+    return app;
+  }
+
   async incrementEventCount(appId: string): Promise<void> {
     await this.appRepository.incrementEventCount(appId);
   }

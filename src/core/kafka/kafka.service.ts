@@ -6,7 +6,8 @@ export interface EventMessage {
   id: string;
   appId: string;
   eventName: string;
-  userId: string;
+  userId?: string;
+  deviceId?: string;
   sessionId?: string;
   timestamp: string;
   properties: Record<string, any>;

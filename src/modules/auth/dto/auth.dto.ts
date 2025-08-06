@@ -87,6 +87,30 @@ export class ChangePasswordDto {
   newPassword: string;
 }
 
+export class RequestPasswordResetDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ example: 'user@example.com' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ example: '123456' })
+  @IsString()
+  @MinLength(6)
+  @MaxLength(6)
+  otp: string;
+
+  @ApiProperty({ example: 'newpassword123' })
+  @IsString()
+  @MinLength(6)
+  @MaxLength(100)
+  newPassword: string;
+}
+
 export class AuthResponseDto {
   @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
   accessToken: string;
