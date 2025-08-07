@@ -49,6 +49,12 @@ class EnvironmentVariables {
 
   @IsString()
   KAFKA_BROKERS: string;
+
+  @IsString()
+  KAFKA_USERNAME: string;
+
+  @IsString()
+  KAFKA_PASSWORD: string;
 }
 
 export function validate(config: Record<string, unknown>) {

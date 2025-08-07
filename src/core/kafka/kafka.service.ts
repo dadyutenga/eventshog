@@ -31,15 +31,35 @@ export class KafkaService implements OnModuleDestroy {
   private initializeKafka() {
     const config = this.configService.get('kafka');
     
-    this.kafka = new Kafka({
+    this.logger.log('Initializing Kafka client with configuration:');
+    this.logger.log(`Client ID: ${config.clientId}`);
+    this.logger.log(`Brokers: ${config.brokers.join(', ')}`);
+    this.logger.log(`SSL: ${config.ssl}`);
+    this.logger.log(`SASL: ${JSON.stringify(config.sasl)}`);
+    this.logger.log(`Connection Timeout: ${config.connectionTimeout}`);
+    this.logger.log(`Authentication Timeout: ${config.authenticationTimeout}`);
+    
+    const kafkaConfig: any = {
       clientId: config.clientId,
       brokers: config.brokers,
       ssl: config.ssl,
-      sasl: config.sasl,
       connectionTimeout: config.connectionTimeout,
       authenticationTimeout: config.authenticationTimeout,
       retry: config.retry,
-    });
+    };
+
+    // Add SASL configuration
+    if (config.sasl) {
+      kafkaConfig.sasl = config.sasl;
+      
+      // For Google Cloud Managed Kafka, also set the JAAS configuration
+      if (config.saslJaasConfig) {
+        kafkaConfig.saslJaasConfig = config.saslJaasConfig;
+        this.logger.log('Using JAAS configuration for Google Cloud Managed Kafka');
+      }
+    }
+
+    this.kafka = new Kafka(kafkaConfig);
 
     this.producer = this.kafka.producer();
     this.consumer = this.kafka.consumer({ 
@@ -51,12 +71,30 @@ export class KafkaService implements OnModuleDestroy {
 
   async connect(): Promise<void> {
     try {
+      this.logger.log('Attempting to connect to Kafka...');
+      
+      // Test DNS resolution first
+      const config = this.configService.get('kafka');
+      for (const broker of config.brokers) {
+        this.logger.log(`Testing connection to broker: ${broker}`);
+      }
+      
       await this.producer.connect();
+      this.logger.log('Kafka producer connected successfully');
+      
       await this.consumer.connect();
+      this.logger.log('Kafka consumer connected successfully');
+      
       this.isConnected = true;
       this.logger.log('Kafka producer and consumer connected');
     } catch (error) {
       this.logger.error('Failed to connect to Kafka:', error);
+      this.logger.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
       throw error;
     }
   }
