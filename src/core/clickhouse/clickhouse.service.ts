@@ -56,11 +56,26 @@ export class ClickHouseService implements OnModuleDestroy {
 
   async executeQueryInDatabase(databaseName: string, query: string, format: 'JSONEachRow' | 'JSON' = 'JSONEachRow') {
     try {
-      const result = await this.client.query({
-        query: `USE ${databaseName}; ${query}`,
-        format,
+      // Create a new client with the specific database
+      const config = this.configService.get('clickhouse');
+      const databaseClient = createClient({
+        url: config.url,
+        username: config.username,
+        password: config.password,
+        database: databaseName, // Use the specific database
+        request_timeout: config.request_timeout,
+        keep_alive: config.keep_alive,
       });
-      return await result.json();
+      
+      try {
+        const result = await databaseClient.query({
+          query,
+          format,
+        });
+        return await result.json();
+      } finally {
+        await databaseClient.close();
+      }
     } catch (error) {
       this.logger.error(`ClickHouse query execution failed in database ${databaseName}:`, error);
       throw error;
