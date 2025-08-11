@@ -12,6 +12,11 @@ export class AnalyticsRepository {
     try {
       const databaseName = this.clickhouseService.getDatabaseNameFromAppId(filter.appId);
       
+      // Format dates for ClickHouse (YYYY-MM-DD HH:MM:SS)
+      const formatDateForClickHouse = (date: Date) => {
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+      };
+      
       let query = `
         SELECT 
           id,
@@ -32,11 +37,11 @@ export class AnalyticsRepository {
       const params: string[] = [];
 
       if (filter.startDate) {
-        query += ` AND timestamp >= '${filter.startDate.toISOString()}'`;
+        query += ` AND timestamp >= '${formatDateForClickHouse(filter.startDate)}'`;
       }
 
       if (filter.endDate) {
-        query += ` AND timestamp <= '${filter.endDate.toISOString()}'`;
+        query += ` AND timestamp <= '${formatDateForClickHouse(filter.endDate)}'`;
       }
 
       if (filter.userId) {
@@ -94,9 +99,15 @@ export class AnalyticsRepository {
   async getAnalyticsMetrics(filter: AnalyticsFilter): Promise<any> {
     try {
       const databaseName = this.clickhouseService.getDatabaseNameFromAppId(filter.appId);
+      
+      // Format dates for ClickHouse (YYYY-MM-DD HH:MM:SS)
+      const formatDateForClickHouse = (date: Date) => {
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+      };
+      
       const baseWhere = `WHERE app_id = '${filter.appId}'`;
       const dateFilter = filter.startDate && filter.endDate 
-        ? `AND timestamp >= '${filter.startDate.toISOString()}' AND timestamp <= '${filter.endDate.toISOString()}'`
+        ? `AND timestamp >= '${formatDateForClickHouse(filter.startDate)}' AND timestamp <= '${formatDateForClickHouse(filter.endDate)}'`
         : '';
 
       // Total events
@@ -222,9 +233,15 @@ export class AnalyticsRepository {
   async getUserAnalytics(appId: string, userId: string, startDate?: Date, endDate?: Date): Promise<UserAnalytics> {
     try {
       const databaseName = this.clickhouseService.getDatabaseNameFromAppId(appId);
+      
+      // Format dates for ClickHouse (YYYY-MM-DD HH:MM:SS)
+      const formatDateForClickHouse = (date: Date) => {
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+      };
+      
       const baseWhere = `WHERE app_id = '${appId}' AND user_id = '${userId}'`;
       const dateFilter = startDate && endDate 
-        ? `AND timestamp >= '${startDate.toISOString()}' AND timestamp <= '${endDate.toISOString()}'`
+        ? `AND timestamp >= '${formatDateForClickHouse(startDate)}' AND timestamp <= '${formatDateForClickHouse(endDate)}'`
         : '';
 
       const query = `
@@ -288,9 +305,15 @@ export class AnalyticsRepository {
   async getEventAnalytics(appId: string, eventName: string, startDate?: Date, endDate?: Date): Promise<EventAnalytics> {
     try {
       const databaseName = this.clickhouseService.getDatabaseNameFromAppId(appId);
+      
+      // Format dates for ClickHouse (YYYY-MM-DD HH:MM:SS)
+      const formatDateForClickHouse = (date: Date) => {
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+      };
+      
       const baseWhere = `WHERE app_id = '${appId}' AND event_name = '${eventName}'`;
       const dateFilter = startDate && endDate 
-        ? `AND timestamp >= '${startDate.toISOString()}' AND timestamp <= '${endDate.toISOString()}'`
+        ? `AND timestamp >= '${formatDateForClickHouse(startDate)}' AND timestamp <= '${formatDateForClickHouse(endDate)}'`
         : '';
 
       const query = `
@@ -381,12 +404,17 @@ export class AnalyticsRepository {
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
 
+      // Format dates for ClickHouse (YYYY-MM-DD HH:MM:SS)
+      const formatDateForClickHouse = (date: Date) => {
+        return date.toISOString().slice(0, 19).replace('T', ' ');
+      };
+
       // Active users in last hour
       const activeUsersQuery = `
         SELECT uniqExact(user_id) as active_users
         FROM events 
         WHERE app_id = '${appId}' 
-        AND timestamp >= '${oneHourAgo.toISOString()}'
+        AND timestamp >= '${formatDateForClickHouse(oneHourAgo)}'
         AND user_id IS NOT NULL
       `;
 
@@ -395,7 +423,7 @@ export class AnalyticsRepository {
         SELECT count() as events_per_minute
         FROM events 
         WHERE app_id = '${appId}' 
-        AND timestamp >= '${oneMinuteAgo.toISOString()}'
+        AND timestamp >= '${formatDateForClickHouse(oneMinuteAgo)}'
       `;
 
       // Top events in last hour
@@ -405,7 +433,7 @@ export class AnalyticsRepository {
           count() as count
         FROM events 
         WHERE app_id = '${appId}' 
-        AND timestamp >= '${oneHourAgo.toISOString()}'
+        AND timestamp >= '${formatDateForClickHouse(oneHourAgo)}'
         GROUP BY event_name
         ORDER BY count DESC
         LIMIT 5
@@ -419,7 +447,7 @@ export class AnalyticsRepository {
           max(timestamp) as last_occurrence
         FROM events 
         WHERE app_id = '${appId}' 
-        AND timestamp >= '${oneHourAgo.toISOString()}'
+        AND timestamp >= '${formatDateForClickHouse(oneHourAgo)}'
         AND event_name LIKE '%ERROR%'
         GROUP BY event_name
         ORDER BY count DESC
