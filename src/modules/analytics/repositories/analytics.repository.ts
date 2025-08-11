@@ -10,6 +10,8 @@ export class AnalyticsRepository {
 
   async getEvents(filter: AnalyticsFilter): Promise<GenericEvent[]> {
     try {
+      const databaseName = this.clickhouseService.getDatabaseNameFromAppId(filter.appId);
+      
       let query = `
         SELECT 
           id,
@@ -66,8 +68,8 @@ export class AnalyticsRepository {
         }
       }
 
-      this.logger.debug(`Executing query: ${query}`);
-      const result = await this.clickhouseService.executeQuery(query);
+      this.logger.debug(`Executing query in database ${databaseName}: ${query}`);
+      const result = await this.clickhouseService.executeQueryInDatabase(databaseName, query);
       const data = Array.isArray(result) ? result : [];
 
       return data.map((row: any) => ({
@@ -91,6 +93,7 @@ export class AnalyticsRepository {
 
   async getAnalyticsMetrics(filter: AnalyticsFilter): Promise<any> {
     try {
+      const databaseName = this.clickhouseService.getDatabaseNameFromAppId(filter.appId);
       const baseWhere = `WHERE app_id = '${filter.appId}'`;
       const dateFilter = filter.startDate && filter.endDate 
         ? `AND timestamp >= '${filter.startDate.toISOString()}' AND timestamp <= '${filter.endDate.toISOString()}'`
@@ -172,13 +175,13 @@ export class AnalyticsRepository {
         versionBreakdown,
         timeSeriesData
       ] = await Promise.all([
-        this.clickhouseService.executeQuery(totalEventsQuery),
-        this.clickhouseService.executeQuery(uniqueUsersQuery),
-        this.clickhouseService.executeQuery(uniqueDevicesQuery),
-        this.clickhouseService.executeQuery(eventBreakdownQuery),
-        this.clickhouseService.executeQuery(platformBreakdownQuery),
-        this.clickhouseService.executeQuery(versionBreakdownQuery),
-        this.clickhouseService.executeQuery(timeSeriesQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, totalEventsQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, uniqueUsersQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, uniqueDevicesQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, eventBreakdownQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, platformBreakdownQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, versionBreakdownQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, timeSeriesQuery),
       ]);
 
       const totalEventsData = Array.isArray(totalEvents) ? totalEvents : [];
@@ -218,6 +221,7 @@ export class AnalyticsRepository {
 
   async getUserAnalytics(appId: string, userId: string, startDate?: Date, endDate?: Date): Promise<UserAnalytics> {
     try {
+      const databaseName = this.clickhouseService.getDatabaseNameFromAppId(appId);
       const baseWhere = `WHERE app_id = '${appId}' AND user_id = '${userId}'`;
       const dateFilter = startDate && endDate 
         ? `AND timestamp >= '${startDate.toISOString()}' AND timestamp <= '${endDate.toISOString()}'`
@@ -258,7 +262,7 @@ export class AnalyticsRepository {
         ORDER BY count DESC
       `;
 
-      const eventBreakdown = await this.clickhouseService.executeQuery(eventBreakdownQuery);
+      const eventBreakdown = await this.clickhouseService.executeQueryInDatabase(databaseName, eventBreakdownQuery);
       const eventBreakdownData = Array.isArray(eventBreakdown) ? eventBreakdown : [];
 
       return {
@@ -283,6 +287,7 @@ export class AnalyticsRepository {
 
   async getEventAnalytics(appId: string, eventName: string, startDate?: Date, endDate?: Date): Promise<EventAnalytics> {
     try {
+      const databaseName = this.clickhouseService.getDatabaseNameFromAppId(appId);
       const baseWhere = `WHERE app_id = '${appId}' AND event_name = '${eventName}'`;
       const dateFilter = startDate && endDate 
         ? `AND timestamp >= '${startDate.toISOString()}' AND timestamp <= '${endDate.toISOString()}'`
@@ -299,7 +304,7 @@ export class AnalyticsRepository {
         GROUP BY event_name
       `;
 
-      const result = await this.clickhouseService.executeQuery(query);
+      const result = await this.clickhouseService.executeQueryInDatabase(databaseName, query);
       const resultData = Array.isArray(result) ? result : [];
       
       if (resultData.length === 0) {
@@ -319,7 +324,7 @@ export class AnalyticsRepository {
         ORDER BY hour
       `;
 
-      const timeDistribution = await this.clickhouseService.executeQuery(timeDistributionQuery);
+      const timeDistribution = await this.clickhouseService.executeQueryInDatabase(databaseName, timeDistributionQuery);
 
       return {
         eventName: row.event_name,
@@ -341,6 +346,8 @@ export class AnalyticsRepository {
 
   async executeCustomQuery(appId: string, query: string): Promise<any> {
     try {
+      const databaseName = this.clickhouseService.getDatabaseNameFromAppId(appId);
+      
       // Validate that the query contains the app_id filter for security
       if (!query.toLowerCase().includes(`app_id = '${appId}'`)) {
         throw new Error('Custom query must include app_id filter for security');
@@ -358,8 +365,8 @@ export class AnalyticsRepository {
         throw new Error('Query contains forbidden keywords. Only SELECT queries are allowed for analytics.');
       }
 
-      this.logger.debug(`Executing custom query: ${query}`);
-      const result = await this.clickhouseService.executeQuery(query);
+      this.logger.debug(`Executing custom query in database ${databaseName}: ${query}`);
+      const result = await this.clickhouseService.executeQueryInDatabase(databaseName, query);
       return result;
     } catch (error) {
       this.logger.error('Failed to execute custom query:', error);
@@ -369,6 +376,7 @@ export class AnalyticsRepository {
 
   async getRealTimeMetrics(appId: string): Promise<any> {
     try {
+      const databaseName = this.clickhouseService.getDatabaseNameFromAppId(appId);
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
@@ -424,10 +432,10 @@ export class AnalyticsRepository {
         topEvents,
         recentErrors
       ] = await Promise.all([
-        this.clickhouseService.executeQuery(activeUsersQuery),
-        this.clickhouseService.executeQuery(eventsPerMinuteQuery),
-        this.clickhouseService.executeQuery(topEventsQuery),
-        this.clickhouseService.executeQuery(recentErrorsQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, activeUsersQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, eventsPerMinuteQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, topEventsQuery),
+        this.clickhouseService.executeQueryInDatabase(databaseName, recentErrorsQuery),
       ]);
 
       return {

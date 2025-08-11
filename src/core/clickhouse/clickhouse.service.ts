@@ -54,6 +54,23 @@ export class ClickHouseService implements OnModuleDestroy {
     }
   }
 
+  async executeQueryInDatabase(databaseName: string, query: string, format: 'JSONEachRow' | 'JSON' = 'JSONEachRow') {
+    try {
+      const result = await this.client.query({
+        query: `USE ${databaseName}; ${query}`,
+        format,
+      });
+      return await result.json();
+    } catch (error) {
+      this.logger.error(`ClickHouse query execution failed in database ${databaseName}:`, error);
+      throw error;
+    }
+  }
+
+  getDatabaseNameFromAppId(appId: string): string {
+    return `tenant_${appId}`;
+  }
+
   async insert(table: string, data: any[]) {
     try {
       await this.client.insert({
