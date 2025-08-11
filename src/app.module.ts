@@ -14,7 +14,6 @@ import { ClickHouseModule } from './core/clickhouse/clickhouse.module';
 import { KafkaModule } from './core/kafka/kafka.module';
 import { KafkaProducerModule } from './modules/kafka-producer/kafka-producer.module';
 import { EventsModule } from './modules/events/events.module';
-import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { validate } from './config/env.validation';
 
 
@@ -53,7 +52,6 @@ import { validate } from './config/env.validation';
     KafkaModule,
     KafkaProducerModule,
     EventsModule,
-    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
