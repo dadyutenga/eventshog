@@ -20,7 +20,7 @@ export class ApiKeyGuard implements CanActivate {
 
     const app = await this.authService.validateApiKey(apiKey);
     if (!app) {
-      throw new UnauthorizedException('Invalid API key');
+      throw new UnauthorizedException(`Invalid API key. API key is required to track events. passed ${apiKey}`);
     }
 
     // Attach app to request for use in controllers
