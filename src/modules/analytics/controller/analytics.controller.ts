@@ -15,15 +15,14 @@ import {
   import { 
     AnalyticsFilterDto, 
     CustomQueryDto, 
-    EventQueryDto, 
-    UserJourneyDto 
+
   } from '../dto/analytics.dto';
   import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
   import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
   
   @ApiTags('Analytics')
   @Controller('analytics')
-  @UseGuards(JwtAuthGuard, ApiKeyGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   export class AnalyticsController {
     private readonly logger = new Logger(AnalyticsController.name);
