@@ -15,6 +15,7 @@ import { KafkaModule } from './core/kafka/kafka.module';
 import { KafkaProducerModule } from './modules/kafka-producer/kafka-producer.module';
 import { EventsModule } from './modules/events/events.module';
 import { validate } from './config/env.validation';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 
 @Module({
@@ -52,6 +53,7 @@ import { validate } from './config/env.validation';
     KafkaModule,
     KafkaProducerModule,
     EventsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
